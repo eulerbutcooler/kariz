@@ -7,50 +7,59 @@ import (
 )
 
 /*
- * NOTE: tunnel ids are like this:
- * "home"="http://localhost:8000", here ID="home" the localhost url is known by client only and never by server
- * "api"="http://localhost:3000"
- * "blog"="http://localhost:8080"
- * so sessions = {"home"->sess, "api" ->sess, "blog" ->sess}
- * and tunnels = {sess -> ["home","api","blog"]}
+ * NOTE:
+ * Two strings per tunnel: Subdomain and Label. Subdomain = Server minted,
+ * Label = User specified. Ex - Subdomain = meow.cat.pizza.kariz.xyz, Label = web, api, etc
+ * Registry:
+ * {
+ * sessions={
+ * "meow.cat.pizza"->Binding{sess,"web"},
+ * "yo.pierre.here"->Binding{sess,"api"}
+ * }
+ * tunnels={
+ * sess->["meow.cat.pizza", "yo.pierre.here"]
+ * }
+ * }
  */
 
 type Registry struct {
 	mu       sync.RWMutex
-	sessions map[string]*yamux.Session
+	sessions map[string]Binding
 	tunnels  map[*yamux.Session][]string
+}
+
+type Binding struct {
+	Session *yamux.Session
+	Label   string
 }
 
 func NewRegistry() *Registry {
 	return &Registry{
 		// NOTE: id to session mapping
-		sessions: make(map[string]*yamux.Session),
+		sessions: make(map[string]Binding),
 		// NOTE: session -> all tunnel ids it owns
 		tunnels: make(map[*yamux.Session][]string),
 	}
 }
 
-func (r *Registry) Register(sess *yamux.Session, ids []string) (bound, clashes []string) {
+func (r *Registry) Register(sess *yamux.Session, subdomain, label string) (ok bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	for _, id := range ids {
-		if _, exists := r.sessions[id]; exists {
-			clashes = append(clashes, id)
-			continue
-		}
-		r.sessions[id] = sess
-		r.tunnels[sess] = append(r.tunnels[sess], id)
-		bound = append(bound, id)
+	if _, exists := r.sessions[subdomain]; exists {
+		return false
+	} else {
+		r.sessions[subdomain] = Binding{Session: sess, Label: label}
+		r.tunnels[sess] = append(r.tunnels[sess], subdomain)
+		return true
 	}
-	return bound, clashes
 }
 
-func (r *Registry) Lookup(id string) (*yamux.Session, bool) {
+func (r *Registry) Lookup(subdomain string) (Binding, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	sess, ok := r.sessions[id]
-	return sess, ok
+	b, ok := r.sessions[subdomain]
+	return b, ok
 }
 
 func (r *Registry) Unregister(sess *yamux.Session) []string {

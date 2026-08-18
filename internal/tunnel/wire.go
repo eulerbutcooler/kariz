@@ -19,6 +19,7 @@ type Tunnel struct {
 
 type Ack struct {
 	Results []TunnelResult `json:"results"`
+	Error   string         `json:"error,omitempty"`
 }
 
 type TunnelResult struct {
