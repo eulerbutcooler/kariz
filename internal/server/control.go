@@ -68,7 +68,7 @@ func (c *Control) handleConn(ctx context.Context, conn net.Conn) {
 	}()
 	ctrl, err := sess.AcceptStream()
 	if err != nil {
-		c.log.Error("no client", "err", err)
+		c.log.Error("accept control stream failed", "err", err)
 		return
 	}
 	r := bufio.NewReader(ctrl)
