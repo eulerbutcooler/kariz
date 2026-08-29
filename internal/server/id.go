@@ -24,7 +24,7 @@ type Generator struct {
 
 func NewGenerator(words []string) (*Generator, error) {
 	if len(words) < 3 {
-		return nil, fmt.Errorf("kariz: wordlist too small: need at least 3, got %d", len(words))
+		return nil, fmt.Errorf("surang: wordlist too small: need at least 3, got %d", len(words))
 	}
 	return &Generator{words: words}, nil
 }
@@ -46,7 +46,7 @@ func (g *Generator) GenerateID() string {
 func (g *Generator) randIndex(n uint32) uint32 {
 	var b [4]byte
 	if _, err := io.ReadFull(rand.Reader, b[:]); err != nil {
-		panic(fmt.Sprintf("kariz: crypto/rand failed: %v", err))
+		panic(fmt.Sprintf("surang: crypto/rand failed: %v", err))
 	}
 	return binary.LittleEndian.Uint32(b[:]) % n
 }
@@ -54,12 +54,12 @@ func (g *Generator) randIndex(n uint32) uint32 {
 func mustNewGenerator(fsys embed.FS) *Generator {
 	data, err := fsys.ReadFile("wordlist.txt")
 	if err != nil {
-		panic(fmt.Sprintf("kariz: failed to read embedded wordlist: %v", err))
+		panic(fmt.Sprintf("surang: failed to read embedded wordlist: %v", err))
 	}
 	words := strings.Fields(string(data))
 	g, err := NewGenerator(words)
 	if err != nil {
-		panic(fmt.Sprintf("kariz: bad wordlist: %v", err))
+		panic(fmt.Sprintf("surang: bad wordlist: %v", err))
 	}
 	return g
 }

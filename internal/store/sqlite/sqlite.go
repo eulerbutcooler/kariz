@@ -8,7 +8,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/eulerbutcooler/kariz/internal/store"
+	"github.com/eulerbutcooler/surang/internal/store"
 )
 
 type Store struct {

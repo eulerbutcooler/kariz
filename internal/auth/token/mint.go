@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/eulerbutcooler/kariz/internal/store"
+	"github.com/eulerbutcooler/surang/internal/store"
 )
 
 func Mint(st store.Store, userID, expiresAt string) (string, error) {

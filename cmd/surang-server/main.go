@@ -9,17 +9,18 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/eulerbutcooler/kariz/internal/api"
-	"github.com/eulerbutcooler/kariz/internal/auth/token"
-	"github.com/eulerbutcooler/kariz/internal/server"
-	"github.com/eulerbutcooler/kariz/internal/store/sqlite"
+	charmlog "github.com/charmbracelet/log"
+	"github.com/eulerbutcooler/surang/internal/api"
+	"github.com/eulerbutcooler/surang/internal/auth/token"
+	"github.com/eulerbutcooler/surang/internal/server"
+	"github.com/eulerbutcooler/surang/internal/store/sqlite"
 )
 
 func main() {
 	controlAddr := flag.String("control", ":8000", "address for client control connections")
 	httpAddr := flag.String("http", ":8080", "address for public HTTP traffic")
-	domain := flag.String("domain", "kariz.xyz", "wildcard domain suffix for tunnels")
-	db := flag.String("db", "kariz.db", "database for kariz")
+	domain := flag.String("domain", "surang.online", "wildcard domain suffix for tunnels")
+	db := flag.String("db", "chooha.db", "database for surang")
 	addtoken := flag.String("addtoken", "", "admin: mint a token with this label, print once, exit")
 	apiAddr := flag.String("api", ":9000", "address for the account API")
 	flag.Parse()
@@ -36,7 +37,10 @@ func main() {
 		HTTPAddr:    *httpAddr,
 		Domain:      *domain,
 	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(charmlog.NewWithOptions(os.Stderr, charmlog.Options{
+		ReportTimestamp: true,
+	}))
+
 	st, err := sqlite.NewStore(*db)
 	if err != nil {
 		logger.Error("open store", "err", err)

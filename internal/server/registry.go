@@ -9,7 +9,7 @@ import (
 /*
  * NOTE:
  * Two strings per tunnel: Subdomain and Label. Subdomain = Server minted,
- * Label = User specified. Ex - Subdomain = meow.cat.pizza.kariz.xyz, Label = web, api, etc
+ * Label = User specified. Ex - Subdomain = meow.cat.pizza.surang.xyz, Label = web, api, etc
  * Registry:
  * {
  * sessions={

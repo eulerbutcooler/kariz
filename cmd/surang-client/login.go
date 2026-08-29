@@ -13,7 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/eulerbutcooler/kariz/internal/client"
+	"github.com/eulerbutcooler/surang/internal/client"
 )
 
 var (
@@ -145,6 +145,7 @@ func newLoginModel() *loginModel {
 }
 
 func makeLoginForm(m *loginModel) *huh.Form {
+
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
@@ -156,7 +157,7 @@ func makeLoginForm(m *loginModel) *huh.Form {
 				Value(&m.mode),
 			huh.NewInput().
 				Title("Server").
-				Description("kariz API address").
+				Description("surang API address").
 				Placeholder("localhost:9000").
 				Value(&m.server),
 			huh.NewInput().
@@ -208,6 +209,8 @@ func (m *loginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.form.Init()
 			}
 		}
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
 	case spinner.TickMsg:
 		if m.step == stepWorking {
 			sp, cmd := m.spinner.Update(msg)
@@ -238,17 +241,18 @@ func (m *loginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *loginModel) View() string {
+
 	switch m.step {
 	case stepWorking:
-		return titleStyle.Render("kariz login") + "\n\n  " + m.spinner.View() + " minting token..."
+		return titleStyle.Render("surang") + "\n\n  " + m.spinner.View() + " minting token..."
 	case stepDone:
-		return okStyle.Render("(─‿‿─) token saved to ~/.kariz/config.json") +
-			"\n\n  run: kariz-client -tunnel web=localhost:3000"
+		return okStyle.Render("(─‿‿─) token saved to ~/.surang/config.json") +
+			"\n\n  run: surang-client -tunnel web=localhost:3000"
 	case stepError:
 		return errStyle.Render("(⌣́_⌣̀) "+m.err.Error()) +
 			"\n\n enter: try again · ctrl+c: quit"
 	}
-	return titleStyle.Render("kariz login") + "\n" + m.form.View()
+	return titleStyle.Render("surang login") + "\n" + m.form.View()
 }
 
 func runLogin() error {

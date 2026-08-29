@@ -7,14 +7,15 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/eulerbutcooler/kariz/internal/client"
+	charmlog "github.com/charmbracelet/log"
+	"github.com/eulerbutcooler/surang/internal/client"
 )
 
 func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "login" {
 		if err := runLogin(); err != nil {
-			fmt.Fprintln(os.Stderr, "kariz-client:", err)
+			fmt.Fprintln(os.Stderr, "surang-client:", err)
 			os.Exit(1)
 		}
 		return
@@ -22,10 +23,10 @@ func main() {
 
 	cfg, err := client.LoadConfig()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "kariz-client: no token found - run `kariz-client login` first")
+		fmt.Fprintln(os.Stderr, "surang-client: no token found - run `surang-client login` first")
 		os.Exit(1)
 	}
-	server := flag.String("server", "localhost:5555", "kariz server control address")
+	server := flag.String("server", "localhost:5555", "surang server control address")
 	var tunnels []string
 	flag.Func("tunnel", "label=host:port to expose (repeatable)", func(s string) error {
 		tunnels = append(tunnels, s)
@@ -34,11 +35,13 @@ func main() {
 	flag.Parse()
 
 	if len(tunnels) == 0 {
-		fmt.Fprintln(os.Stderr, "kariz-client: at least one -tunnel required: -tunnel web=localhost:3000")
+		fmt.Fprintln(os.Stderr, "surang-client: at least one -tunnel required: -tunnel web=localhost:3000")
 		os.Exit(2)
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(charmlog.NewWithOptions(os.Stderr, charmlog.Options{
+		ReportTimestamp: true,
+	}))
 
 	parsed, err := client.ParseTunnels(tunnels)
 	if err != nil {

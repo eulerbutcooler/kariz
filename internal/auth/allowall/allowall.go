@@ -1,6 +1,6 @@
 package allowall
 
-import "github.com/eulerbutcooler/kariz/internal/auth"
+import "github.com/eulerbutcooler/surang/internal/auth"
 
 type AllowAll struct{}
 

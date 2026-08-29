@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/eulerbutcooler/kariz/internal/api"
-	"github.com/eulerbutcooler/kariz/internal/auth"
+	"github.com/eulerbutcooler/surang/internal/api"
+	"github.com/eulerbutcooler/surang/internal/auth"
 )
 
 type Config struct {

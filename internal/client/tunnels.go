@@ -7,7 +7,7 @@ import (
 )
 
 /*
- * NOTE: kariz-client -server 1.2.3.4:5555 -tunnel web=localhost:3000 -tunnel api=localhost:8000
+ * NOTE: surang-client -server 1.2.3.4:5555 -tunnel web=localhost:3000 -tunnel api=localhost:8000
  */
 
 type Tunnel struct {

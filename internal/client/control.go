@@ -6,9 +6,26 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strings"
 
-	"github.com/eulerbutcooler/kariz/internal/tunnel"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/eulerbutcooler/surang/internal/tunnel"
 	"github.com/hashicorp/yamux"
+)
+
+var (
+	panelStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(1, 2)
+
+	okStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("42")).
+		Bold(true)
+
+	errStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Bold(true)
 )
 
 type Client struct {
@@ -68,13 +85,16 @@ func (c *Client) Connect(ctx context.Context) error {
 	if ack.Error != "" {
 		return fmt.Errorf("registration rejected: %s", ack.Error)
 	}
+	var rows []string
 	for _, res := range ack.Results {
 		if res.Error != "" {
-			c.log.Warn("tunnel failed", "label", res.ID, "reason", res.Error)
+			rows = append(rows, errStyle.Render(`¯\_(ツ)_/¯`+res.ID+" "+res.Error))
 			continue
 		}
-		c.log.Info("tunnel ready", "label", res.ID, "url", "http://"+res.Host)
+		rows = append(rows, okStyle.Render(res.ID)+
+			"  →  "+lipgloss.NewStyle().Bold(true).Render("http://"+res.Host))
 	}
+	fmt.Println(panelStyle.Render(strings.Join(rows, "\n")))
 	c.sess = sess
 	return nil
 }

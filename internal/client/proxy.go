@@ -7,7 +7,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/eulerbutcooler/kariz/internal/tunnel"
+	"github.com/eulerbutcooler/surang/internal/tunnel"
 	"github.com/hashicorp/yamux"
 )
 

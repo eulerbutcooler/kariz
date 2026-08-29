@@ -17,7 +17,7 @@ func configPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("config: home: %w", err)
 	}
-	return filepath.Join(home, ".kariz", "config.json"), nil
+	return filepath.Join(home, ".surang", "config.json"), nil
 }
 
 func SaveConfig(cfg Config) error {

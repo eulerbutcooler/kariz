@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eulerbutcooler/kariz/internal/auth"
-	"github.com/eulerbutcooler/kariz/internal/auth/token"
-	"github.com/eulerbutcooler/kariz/internal/store"
+	"github.com/eulerbutcooler/surang/internal/auth"
+	"github.com/eulerbutcooler/surang/internal/auth/token"
+	"github.com/eulerbutcooler/surang/internal/store"
 )
 
 type API struct {

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/eulerbutcooler/kariz/internal/auth"
-	"github.com/eulerbutcooler/kariz/internal/store"
+	"github.com/eulerbutcooler/surang/internal/auth"
+	"github.com/eulerbutcooler/surang/internal/store"
 )
 
 type Token struct {
