@@ -11,8 +11,9 @@ import (
 	"github.com/eulerbutcooler/surang/internal/client"
 )
 
-func main() {
+var version = "dev"
 
+func main() {
 	if len(os.Args) > 1 && os.Args[1] == "login" {
 		if err := runLogin(); err != nil {
 			fmt.Fprintln(os.Stderr, "surang-client:", err)
@@ -32,7 +33,13 @@ func main() {
 		tunnels = append(tunnels, s)
 		return nil
 	})
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
 
 	if len(tunnels) == 0 {
 		fmt.Fprintln(os.Stderr, "surang-client: at least one -tunnel required: -tunnel web=localhost:3000")

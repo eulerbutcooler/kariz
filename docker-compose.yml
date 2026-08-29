@@ -1,0 +1,16 @@
+services:
+  surang:
+    image: ghcr.io/eulerbutcooler/surang-server:latest
+    restart: unless-stopped
+    ports:
+      - "5555:5555"   # users hit this
+      - "80:8080"     # visitors hit this
+      - "9000:9000"   # API
+    volumes:
+      - surang-data:/data
+    command: -domain surang.xyz -db /data/surang.db
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+
+volumes:
+  surang-data:

@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/common-nighthawk/go-figure"
 	"github.com/eulerbutcooler/surang/internal/client"
 )
 
@@ -26,6 +27,10 @@ var (
 	okStyle = lipgloss.NewStyle().
 		Foreground(lipgloss.Color("42")).
 		Bold(true)
+	bannerStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("205")).
+			MarginBottom(1)
 )
 
 type apiClient struct{ base string }
@@ -239,7 +244,6 @@ func (m *loginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *loginModel) View() string {
-
 	switch m.step {
 	case stepWorking:
 		return titleStyle.Render("surang") + "\n\n  " + m.spinner.View() + " minting token..."
@@ -250,7 +254,11 @@ func (m *loginModel) View() string {
 		return errStyle.Render("(⌣́_⌣̀) "+m.err.Error()) +
 			"\n\n enter: try again · ctrl+c: quit"
 	}
-	return titleStyle.Render("surang login") + "\n" + m.form.View()
+	banner := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205")).
+		Render(figure.NewFigure("SURANG", "graffiti", true).String())
+	return banner + "\n" + m.form.View()
 }
 
 func runLogin() error {

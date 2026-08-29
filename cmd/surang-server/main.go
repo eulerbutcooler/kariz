@@ -16,15 +16,21 @@ import (
 	"github.com/eulerbutcooler/surang/internal/store/sqlite"
 )
 
+var version = "dev"
+
 func main() {
-	controlAddr := flag.String("control", ":8000", "address for client control connections")
+	controlAddr := flag.String("control", ":5555", "address for client control connections")
 	httpAddr := flag.String("http", ":8080", "address for public HTTP traffic")
 	domain := flag.String("domain", "surang.online", "wildcard domain suffix for tunnels")
 	db := flag.String("db", "chooha.db", "database for surang")
 	addtoken := flag.String("addtoken", "", "admin: mint a token with this label, print once, exit")
 	apiAddr := flag.String("api", ":9000", "address for the account API")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
-
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
 	mintMode := false
 	flag.Visit(func(f *flag.Flag) {
 		if f.Name == "addtoken" {
