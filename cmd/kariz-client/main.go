@@ -11,8 +11,21 @@ import (
 )
 
 func main() {
+
+	if len(os.Args) > 1 && os.Args[1] == "login" {
+		if err := runLogin(); err != nil {
+			fmt.Fprintln(os.Stderr, "kariz-client:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	cfg, err := client.LoadConfig()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "kariz-client: no token found - run `kariz-client login` first")
+		os.Exit(1)
+	}
 	server := flag.String("server", "localhost:5555", "kariz server control address")
-	secret := flag.String("secret", "", "tunnel token (server must allow it)")
 	var tunnels []string
 	flag.Func("tunnel", "label=host:port to expose (repeatable)", func(s string) error {
 		tunnels = append(tunnels, s)
@@ -33,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cl := client.NewClient(*server, *secret, parsed, logger)
+	cl := client.NewClient(*server, cfg.Token, parsed, logger)
 	if err := cl.Connect(context.Background()); err != nil {
 		logger.Error("connect failed", "err", err)
 		os.Exit(1)
