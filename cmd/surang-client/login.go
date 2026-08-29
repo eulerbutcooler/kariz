@@ -209,8 +209,6 @@ func (m *loginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.form.Init()
 			}
 		}
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
 	case spinner.TickMsg:
 		if m.step == stepWorking {
 			sp, cmd := m.spinner.Update(msg)
