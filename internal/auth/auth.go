@@ -10,3 +10,4 @@ type Identity struct {
 }
 
 var ErrAuthFailed = errors.New("authentication failed")
+var ErrTokenExpired = errors.New("token expired")

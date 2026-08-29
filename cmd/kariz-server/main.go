@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/eulerbutcooler/kariz/internal/api"
 	"github.com/eulerbutcooler/kariz/internal/auth/token"
 	"github.com/eulerbutcooler/kariz/internal/server"
 	"github.com/eulerbutcooler/kariz/internal/store/sqlite"
@@ -20,6 +21,7 @@ func main() {
 	domain := flag.String("domain", "kariz.xyz", "wildcard domain suffix for tunnels")
 	db := flag.String("db", "kariz.db", "database for kariz")
 	addtoken := flag.String("addtoken", "", "admin: mint a token with this label, print once, exit")
+	apiAddr := flag.String("api", ":9000", "address for the account API")
 	flag.Parse()
 
 	mintMode := false
@@ -40,13 +42,14 @@ func main() {
 		logger.Error("open store", "err", err)
 		os.Exit(1)
 	}
+	acc := api.NewAPI(*apiAddr, st, logger)
 	auth := token.New(st)
 	if mintMode {
 		if *addtoken == "" {
 			logger.Error("mint token", "err", "empty label: -addtoken needs a label")
 			os.Exit(1)
 		}
-		plain, err := token.Mint(st, *addtoken)
+		plain, err := token.Mint(st, *addtoken, "")
 		if err != nil {
 			logger.Error("mint token", "err", err)
 			os.Exit(1)
@@ -57,7 +60,7 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	srv := server.New(cfg, auth, logger)
+	srv := server.New(cfg, auth, acc, logger)
 	err = srv.Run(ctx)
 	if err != nil {
 		logger.Error("server exited with error", "err", err)

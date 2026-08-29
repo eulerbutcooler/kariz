@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/eulerbutcooler/kariz/internal/auth"
 	"github.com/eulerbutcooler/kariz/internal/store"
@@ -23,18 +24,42 @@ func New(st store.Store) *Token {
 
 var _ auth.Authenticator = (*Token)(nil)
 
-func (t *Token) Authenticate(secret string) (auth.Identity, error) {
-	tok, err := t.st.TokenByHash(context.Background(), hashToken(secret))
+func validateTokenHash(st store.Store, hash string) (store.Token, error) {
+	tok, err := st.TokenByHash(context.Background(), hash)
 	if errors.Is(err, store.ErrTokenNotFound) {
-		return auth.Identity{}, auth.ErrAuthFailed
+		return store.Token{}, auth.ErrAuthFailed
 	}
 	if err != nil {
-		return auth.Identity{}, fmt.Errorf("token: lookup: %w", err)
+		return store.Token{}, fmt.Errorf("token: lookup: %w", err)
 	}
 	if tok.Revoked {
-		return auth.Identity{}, auth.ErrAuthFailed
+		return store.Token{}, auth.ErrAuthFailed
+	}
+	if tok.ExpiresAt != "" {
+		exp, err := time.Parse(time.RFC3339, tok.ExpiresAt)
+		if err != nil {
+			return store.Token{}, fmt.Errorf("token: parse expiry: %w", err)
+		}
+		if time.Now().UTC().After(exp) {
+			return store.Token{}, auth.ErrTokenExpired
+		}
+	}
+	return tok, nil
+}
+
+func (t *Token) Authenticate(secret string) (auth.Identity, error) {
+	if _, err := validateTokenHash(t.st, hashToken(secret)); err != nil {
+		return auth.Identity{}, err
 	}
 	return auth.Identity{}, nil
+}
+
+func ValidateSession(st store.Store, sessionToken string) (string, error) {
+	tok, err := validateTokenHash(st, hashToken(sessionToken))
+	if err != nil {
+		return "", err
+	}
+	return tok.UserID, nil
 }
 
 func hashToken(secret string) string {

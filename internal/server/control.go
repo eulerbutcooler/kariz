@@ -80,9 +80,11 @@ func (c *Control) handleConn(ctx context.Context, conn net.Conn) {
 	}
 	_, err = c.auth.Authenticate(reg.Secret)
 	if err != nil {
-		if errors.Is(err, auth.ErrAuthFailed) {
-			tunnel.WriteFrame(ctrl, tunnel.Ack{Error: "authentication failed"})
+		msg := "authentication failed"
+		if errors.Is(err, auth.ErrTokenExpired) {
+			msg = "token expired"
 		}
+		tunnel.WriteFrame(ctrl, tunnel.Ack{Error: msg})
 		c.log.Error("auth failed", "err", err)
 		return
 	}
