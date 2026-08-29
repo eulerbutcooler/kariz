@@ -1,0 +1,19 @@
+[Unit]
+Description=surang tunnel server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=surang
+ExecStart=/usr/local/bin/surang-server -control :5555 -http :8080 -api :9000 -domain surang.xyz -db /var/lib/surang/surang.db
+Restart=on-failure
+RestartSec=5
+
+# hardening: the server only needs to read its own binary and write to /var/lib/surang
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/surang
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
