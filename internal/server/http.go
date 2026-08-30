@@ -41,10 +41,11 @@ const bindingKey ctxKey = 0
 
 func NewPublic(addr, domain string, reg *Registry, certMgr *certs.Manager, log *slog.Logger) *Public {
 	p := &Public{
-		addr:   addr,
-		domain: domain,
-		reg:    reg,
-		log:    log,
+		addr:    addr,
+		domain:  domain,
+		reg:     reg,
+		log:     log,
+		certMgr: certMgr,
 	}
 	p.proxy = &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
