@@ -3,31 +3,35 @@ package server
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 
 	"github.com/eulerbutcooler/surang/internal/auth"
+	"github.com/eulerbutcooler/surang/internal/certs"
 	"github.com/eulerbutcooler/surang/internal/tunnel"
 	"github.com/hashicorp/yamux"
 )
 
 type Control struct {
-	addr   string
-	domain string
-	auth   auth.Authenticator
-	reg    *Registry
-	log    *slog.Logger
+	addr    string
+	domain  string
+	auth    auth.Authenticator
+	reg     *Registry
+	certMgr *certs.Manager
+	log     *slog.Logger
 }
 
-func NewControl(addr, domain string, auth auth.Authenticator, reg *Registry, log *slog.Logger) *Control {
+func NewControl(addr, domain string, auth auth.Authenticator, reg *Registry, certMgr *certs.Manager, log *slog.Logger) *Control {
 	return &Control{
-		addr:   addr,
-		domain: domain,
-		auth:   auth,
-		reg:    reg,
-		log:    log,
+		addr:    addr,
+		domain:  domain,
+		auth:    auth,
+		reg:     reg,
+		certMgr: certMgr,
+		log:     log,
 	}
 }
 
@@ -35,6 +39,14 @@ func (c *Control) Run(ctx context.Context) error {
 	ln, err := net.Listen("tcp", c.addr)
 	if err != nil {
 		return fmt.Errorf("control: listen %w", err)
+	}
+	// TLS wraps every accepted conn when a cert manager is wired in;
+	// yamux runs on top of the decrypted stream, unchanged.
+	if c.certMgr != nil {
+		ln = tls.NewListener(ln, &tls.Config{
+			GetCertificate: c.certMgr.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
+		})
 	}
 	go func() {
 		<-ctx.Done()

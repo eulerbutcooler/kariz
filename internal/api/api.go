@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,18 +13,20 @@ import (
 
 	"github.com/eulerbutcooler/surang/internal/auth"
 	"github.com/eulerbutcooler/surang/internal/auth/token"
+	"github.com/eulerbutcooler/surang/internal/certs"
 	"github.com/eulerbutcooler/surang/internal/store"
 )
 
 type API struct {
-	addr string
-	st   store.Store
-	log  *slog.Logger
-	mux  *http.ServeMux
+	addr    string
+	st      store.Store
+	log     *slog.Logger
+	mux     *http.ServeMux
+	certMgr *certs.Manager
 }
 
-func NewAPI(addr string, st store.Store, log *slog.Logger) *API {
-	a := &API{addr: addr, st: st, log: log}
+func NewAPI(addr string, st store.Store, certMgr *certs.Manager, log *slog.Logger) *API {
+	a := &API{addr: addr, st: st, log: log, certMgr: certMgr}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/signup", a.handleSignup)
 	mux.HandleFunc("POST /api/login", a.handleLogin)
@@ -43,9 +46,17 @@ func (a *API) Run(ctx context.Context) error {
 		Addr:    a.addr,
 		Handler: a.mux,
 	}
+	serve := func() error { return srv.ListenAndServe() }
+	if a.certMgr != nil {
+		srv.TLSConfig = &tls.Config{
+			GetCertificate: a.certMgr.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
+		}
+		serve = func() error { return srv.ListenAndServeTLS("", "") }
+	}
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- srv.ListenAndServe()
+		errCh <- serve()
 	}()
 	select {
 	case err := <-errCh:

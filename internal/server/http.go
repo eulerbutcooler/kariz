@@ -3,6 +3,7 @@ package server
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eulerbutcooler/surang/internal/certs"
 	"github.com/eulerbutcooler/surang/internal/tunnel"
 	"github.com/hashicorp/yamux"
 )
@@ -25,18 +27,19 @@ import (
  * and the response back up
  */
 type Public struct {
-	addr   string
-	domain string
-	reg    *Registry
-	log    *slog.Logger
-	proxy  *httputil.ReverseProxy
+	addr    string
+	domain  string
+	reg     *Registry
+	certMgr *certs.Manager
+	log     *slog.Logger
+	proxy   *httputil.ReverseProxy
 }
 
 type ctxKey int
 
 const bindingKey ctxKey = 0
 
-func NewPublic(addr, domain string, reg *Registry, log *slog.Logger) *Public {
+func NewPublic(addr, domain string, reg *Registry, certMgr *certs.Manager, log *slog.Logger) *Public {
 	p := &Public{
 		addr:   addr,
 		domain: domain,
@@ -62,7 +65,43 @@ func NewPublic(addr, domain string, reg *Registry, log *slog.Logger) *Public {
 	return p
 }
 
+func (p *Public) runTLS(ctx context.Context) error {
+	srv := &http.Server{
+		Addr:    ":443",
+		Handler: p,
+		TLSConfig: &tls.Config{
+			GetCertificate: p.certMgr.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
+		},
+	}
+	redir := &http.Server{
+		Addr: ":80",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
+		}),
+	}
+	go redir.ListenAndServe()
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.ListenAndServeTLS("", "") }()
+	select {
+	case err := <-errCh:
+		return fmt.Errorf("public: %w", err)
+	case <-ctx.Done():
+		ctx2, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(ctx2)
+	}
+}
+
 func (p *Public) Run(ctx context.Context) error {
+	if p.certMgr == nil {
+		return p.runPlaintext(ctx)
+	}
+	return p.runTLS(ctx)
+}
+
+func (p *Public) runPlaintext(ctx context.Context) error {
 	srv := &http.Server{
 		Addr:    p.addr,
 		Handler: p,

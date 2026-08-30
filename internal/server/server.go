@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/eulerbutcooler/surang/internal/api"
 	"github.com/eulerbutcooler/surang/internal/auth"
+	"github.com/eulerbutcooler/surang/internal/certs"
 )
 
 type Config struct {
@@ -21,10 +21,10 @@ type Server struct {
 	api     *api.API
 }
 
-func New(cfg Config, auth auth.Authenticator, acc *api.API, log *slog.Logger) *Server {
+func New(cfg Config, auth auth.Authenticator, certMgr *certs.Manager, acc *api.API, log *slog.Logger) *Server {
 	reg := NewRegistry()
-	control := NewControl(cfg.ControlAddr, cfg.Domain, auth, reg, log)
-	public := NewPublic(cfg.HTTPAddr, cfg.Domain, reg, log)
+	control := NewControl(cfg.ControlAddr, cfg.Domain, auth, reg, certMgr, log)
+	public := NewPublic(cfg.HTTPAddr, cfg.Domain, reg, certMgr, log)
 	return &Server{
 		control: control,
 		public:  public,
@@ -35,24 +35,13 @@ func New(cfg Config, auth auth.Authenticator, acc *api.API, log *slog.Logger) *S
 func (s *Server) Run(ctx context.Context) error {
 	loopCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	/* NOTE: Buffer of 3 because we can then take in errros of the losing go routine
-	* after we take in the error of the go routine that returns first. so the losing
-	* one doesnt send without a receiver and hang forever.
-	 */
+	// Buffer of 3: the losing goroutines' sends never block after we
+	// read the first result.
 	errCh := make(chan error, 3)
-	go func() {
-		errCh <- s.public.Run(loopCtx)
-	}()
-	go func() {
-		errCh <- s.control.Run(loopCtx)
-	}()
-	go func() {
-		errCh <- s.api.Run(loopCtx)
-	}()
+	go func() { errCh <- s.public.Run(loopCtx) }()
+	go func() { errCh <- s.control.Run(loopCtx) }()
+	go func() { errCh <- s.api.Run(loopCtx) }()
 	err := <-errCh
 	cancel()
-	if err != nil {
-		return fmt.Errorf("server: %w", err)
-	}
-	return nil
+	return err
 }
