@@ -40,7 +40,9 @@ func (g *Generator) GenerateID() string {
 	for i3 == i1 || i3 == i2 {
 		i3 = g.randIndex(n)
 	}
-	return g.words[i1] + "." + g.words[i2] + "." + g.words[i3]
+	// hyphenated, never dotted: a dotted ID becomes a multi-label subdomain,
+	// which the single-label wildcard cert (*.domain) does not cover
+	return g.words[i1] + "-" + g.words[i2] + "-" + g.words[i3]
 }
 
 func (g *Generator) randIndex(n uint32) uint32 {
