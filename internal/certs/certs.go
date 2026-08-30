@@ -113,7 +113,10 @@ func (m *Manager) obtain() (*certificate.Resource, error) {
 	}
 
 	prov, err := cloudflare.NewDNSProviderConfig(&cloudflare.Config{
-		AuthToken: m.cfToken,
+		AuthToken:          m.cfToken,
+		PropagationTimeout: 5 * time.Minute,
+		PollingInterval:    5 * time.Second,
+		TTL:                120,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("certs: cloudflare provider: %w", err)
