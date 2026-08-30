@@ -31,6 +31,7 @@ type Public struct {
 	domain  string
 	reg     *Registry
 	certMgr *certs.Manager
+	api     http.Handler
 	log     *slog.Logger
 	proxy   *httputil.ReverseProxy
 }
@@ -39,13 +40,14 @@ type ctxKey int
 
 const bindingKey ctxKey = 0
 
-func NewPublic(addr, domain string, reg *Registry, certMgr *certs.Manager, log *slog.Logger) *Public {
+func NewPublic(addr, domain string, reg *Registry, certMgr *certs.Manager, api http.Handler, log *slog.Logger) *Public {
 	p := &Public{
 		addr:    addr,
 		domain:  domain,
 		reg:     reg,
 		log:     log,
 		certMgr: certMgr,
+		api:     api,
 	}
 	p.proxy = &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
@@ -129,6 +131,12 @@ func (p *Public) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sub := strings.TrimSuffix(host, "."+p.domain)
 	if sub == host || sub == "" {
 		http.Error(w, "no such tunnel", http.StatusNotFound)
+		return
+	}
+	// api.<domain> serves the account API on the same listener as the
+	// tunnels; "api" can never collide with a generated 3-word ID.
+	if sub == "api" {
+		p.api.ServeHTTP(w, r)
 		return
 	}
 	binding, ok := p.reg.Lookup(sub)

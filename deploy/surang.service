@@ -5,7 +5,10 @@ Wants=network-online.target
 
 [Service]
 User=surang
-ExecStart=/usr/local/bin/surang-server -control :5555 -http :8080 -api :9000 -domain surang.xyz -db /var/lib/surang/surang.db
+# /etc/default/surang must define CF_DNS_API_TOKEN when -tls-domain is set
+# (leading dash: optional, so plaintext local-only setups still start)
+EnvironmentFile=-/etc/default/surang
+ExecStart=/usr/local/bin/surang-server -control :5555 -http :8080 -api :9000 -domain surang.xyz -tls-domain surang.xyz -tls-email you@example.com -db /var/lib/surang/surang.db
 Restart=on-failure
 RestartSec=5
 
@@ -14,6 +17,10 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=/var/lib/surang
 PrivateTmp=true
+
+# 443 and 80 are privileged ports; the surang user needs this cap to bind them
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target

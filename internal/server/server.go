@@ -24,7 +24,7 @@ type Server struct {
 func New(cfg Config, auth auth.Authenticator, certMgr *certs.Manager, acc *api.API, log *slog.Logger) *Server {
 	reg := NewRegistry()
 	control := NewControl(cfg.ControlAddr, cfg.Domain, auth, reg, certMgr, log)
-	public := NewPublic(cfg.HTTPAddr, cfg.Domain, reg, certMgr, log)
+	public := NewPublic(cfg.HTTPAddr, cfg.Domain, reg, certMgr, acc.Handler(), log)
 	return &Server{
 		control: control,
 		public:  public,

@@ -35,6 +35,10 @@ func NewAPI(addr string, st store.Store, certMgr *certs.Manager, log *slog.Logge
 	return a
 }
 
+// Handler exposes the mux so the public listener can serve the account API
+// on the api.<domain> subdomain over the same port as the tunnels.
+func (a *API) Handler() http.Handler { return a.mux }
+
 var tokenTTLs = map[string]time.Duration{
 	"1h": time.Hour,
 	"1d": 24 * time.Hour,
