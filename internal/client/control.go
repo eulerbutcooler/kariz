@@ -3,6 +3,7 @@ package client
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net"
@@ -30,19 +31,21 @@ var (
 
 type Client struct {
 	server  string
+	useTLS  bool
 	secret  string
 	tunnels map[string]Tunnel
 	sess    *yamux.Session
 	log     *slog.Logger
 }
 
-func NewClient(server, secret string, tunnels []Tunnel, log *slog.Logger) *Client {
+func NewClient(server string, useTLS bool, secret string, tunnels []Tunnel, log *slog.Logger) *Client {
 	byLabel := make(map[string]Tunnel, len(tunnels))
 	for _, t := range tunnels {
 		byLabel[t.Label] = t
 	}
 	return &Client{
 		server:  server,
+		useTLS:  useTLS,
 		secret:  secret,
 		tunnels: byLabel,
 		log:     log,
@@ -61,7 +64,20 @@ func (c *Client) registerTunnels() []tunnel.Tunnel {
 }
 
 func (c *Client) Connect(ctx context.Context) error {
-	conn, err := net.Dial("tcp", c.server)
+	var conn net.Conn
+	var err error
+	if c.useTLS {
+		host, _, splitErr := net.SplitHostPort(c.server)
+		if splitErr != nil {
+			host = c.server
+		}
+		conn, err = tls.Dial("tcp", c.server, &tls.Config{
+			ServerName: host,
+			MinVersion: tls.VersionTLS12,
+		})
+	} else {
+		conn, err = net.Dial("tcp", c.server)
+	}
 	if err != nil {
 		return fmt.Errorf("dial %s: %w", c.server, err)
 	}
@@ -85,6 +101,10 @@ func (c *Client) Connect(ctx context.Context) error {
 	if ack.Error != "" {
 		return fmt.Errorf("registration rejected: %s", ack.Error)
 	}
+	scheme := "http"
+	if c.useTLS {
+		scheme = "https"
+	}
 	var rows []string
 	for _, res := range ack.Results {
 		if res.Error != "" {
@@ -92,7 +112,7 @@ func (c *Client) Connect(ctx context.Context) error {
 			continue
 		}
 		rows = append(rows, okStyle.Render(res.ID)+
-			"  →  "+lipgloss.NewStyle().Bold(true).Render("http://"+res.Host))
+			"  →  "+lipgloss.NewStyle().Bold(true).Render(scheme+"://"+res.Host))
 	}
 	fmt.Println(panelStyle.Render(strings.Join(rows, "\n")))
 	c.sess = sess

@@ -3,8 +3,11 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Config struct {
@@ -52,4 +55,19 @@ func LoadConfig() (Config, error) {
 		return Config{}, fmt.Errorf("config: parse: %w", err)
 	}
 	return cfg, nil
+}
+
+func ControlFromAPI(apiBase string) (addr string, useTLS bool, err error) {
+	u, err := url.Parse(strings.TrimSpace(apiBase))
+	if err != nil {
+		return "", false, fmt.Errorf("config: parse api url: %w", err)
+	}
+	host := u.Hostname()
+	if host == "" {
+		host = u.Path
+	}
+	if host == "" {
+		return "", false, fmt.Errorf("config: api url has no host")
+	}
+	return net.JoinHostPort(host, "5555"), u.Scheme == "https", nil
 }

@@ -85,6 +85,7 @@ type mintErrMsg struct{ err error }
 
 func mintCmd(base, email, password, expiry, mode string) tea.Cmd {
 	return func() tea.Msg {
+		base = strings.TrimSpace(base)
 		c := apiClient{base: base}
 		if mode == "signup" {
 			_, err := c.post("/api/signup", map[string]string{
