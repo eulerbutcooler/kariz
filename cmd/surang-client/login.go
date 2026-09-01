@@ -33,7 +33,14 @@ var (
 			MarginBottom(1)
 )
 
-type apiClient struct{ base string }
+type apiClient struct {
+	base   string
+	client *http.Client
+}
+
+func newAPIClient(base string) apiClient {
+	return apiClient{base: base, client: &http.Client{Timeout: 15 * time.Second}}
+}
 
 type apiError struct {
 	status int
@@ -59,8 +66,7 @@ func (c apiClient) post(path string, body any, bearer string) (map[string]string
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +92,7 @@ type mintErrMsg struct{ err error }
 func mintCmd(base, email, password, expiry, mode string) tea.Cmd {
 	return func() tea.Msg {
 		base = strings.TrimSpace(base)
-		c := apiClient{base: base}
+		c := newAPIClient(base)
 		if mode == "signup" {
 			_, err := c.post("/api/signup", map[string]string{
 				"email": email, "password": password,
