@@ -22,6 +22,14 @@ func main() {
 		return
 	}
 
+	showVersion := flag.Bool("version", false, "print version and exit")
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
+
 	cfg, err := client.LoadConfig()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "surang-client: no token found - run `surang-client login` first")
@@ -33,13 +41,6 @@ func main() {
 		tunnels = append(tunnels, s)
 		return nil
 	})
-	showVersion := flag.Bool("version", false, "print version and exit")
-	flag.Parse()
-
-	if *showVersion {
-		fmt.Println(version)
-		return
-	}
 
 	if len(tunnels) == 0 {
 		fmt.Fprintln(os.Stderr, "surang-client: at least one -tunnel required: -tunnel web=localhost:3000")
