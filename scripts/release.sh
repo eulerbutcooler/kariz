@@ -10,7 +10,7 @@ build() { # build <bin> <os> <arch>
 	[ "$os" = "windows" ] && ext=".exe"
 	out="${bin}-${os}-${arch}${ext}"
 	echo "→ $out"
-	CG0=1 CGO_ENABLED=0 GOOS=$os GOARCH=$arch \
+	CGO_ENABLED=0 GOOS=$os GOARCH=$arch \
 		go build -trimpath -ldflags "-s -w -X main.version=$VERSION" \
 		-o "$DIST/$out" "./cmd/$bin"
 }

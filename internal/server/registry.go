@@ -9,15 +9,15 @@ import (
 /*
  * NOTE:
  * Two strings per tunnel: Subdomain and Label. Subdomain = Server minted,
- * Label = User specified. Ex - Subdomain = meow.cat.pizza.surang.xyz, Label = web, api, etc
+ * Label = User specified. Ex - Subdomain = meow-cat-pizza.surang.xyz, Label = web, api, etc
  * Registry:
  * {
  * sessions={
- * "meow.cat.pizza"->Binding{sess,"web"},
- * "yo.pierre.here"->Binding{sess,"api"}
+ * "meow-cat-pizza"->Binding{sess,"web"},
+ * "yo-pierre-here"->Binding{sess,"api"}
  * }
  * tunnels={
- * sess->["meow.cat.pizza", "yo.pierre.here"]
+ * sess->["meow-cat-pizza", "yo-pierre-here"]
  * }
  * }
  */

@@ -3,12 +3,13 @@ services:
     image: ghcr.io/eulerbutcooler/surang-server:latest
     restart: unless-stopped
     ports:
-      - "5555:5555"   # users hit this
-      - "80:8080"     # visitors hit this
-      - "9000:9000"   # API
+      - "443:443"     # visitors: tunnels and api.<domain>, TLS
+      - "80:80"       # redirects to https
+      - "5555:5555"   # clients: control plane, TLS
+      - "9000:9000"   # API, TLS
     volumes:
       - surang-data:/data
-    command: -domain surang.xyz -db /data/surang.db
+    command: -domain surang.xyz -tls-domain surang.xyz -tls-email you@example.com -db /data/surang.db
     environment:
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
 

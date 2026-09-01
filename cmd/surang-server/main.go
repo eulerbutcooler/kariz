@@ -24,7 +24,7 @@ func main() {
 	tlsDomain := flag.String("tls-domain", "", "wildcard TLS domain (e.g. surang.eulerbutcooler.xyz); empty = plaintext for local dev")
 	tlsEmail := flag.String("tls-email", "", "ACME account email for LetsEncrypt")
 	controlAddr := flag.String("control", ":5555", "address for client control connections")
-	httpAddr := flag.String("http", ":8080", "address for public HTTP traffic")
+	httpAddr := flag.String("http", ":8080", "address for public HTTP traffic (plaintext mode only)")
 	domain := flag.String("domain", "surang.online", "wildcard domain suffix for tunnels")
 	db := flag.String("db", "chooha.db", "database for surang")
 	apiAddr := flag.String("api", ":9000", "address for the account API")

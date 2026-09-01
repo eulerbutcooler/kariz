@@ -9,7 +9,7 @@ A self-hostable tunnel server. Expose services running on your machine through a
 No server needed to try it:
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/eulerbutcooler/surang/main/scripts/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/eulerbutcooler/surang/main/site/install.sh)"
 surang-client login
 ```
 
@@ -25,7 +25,7 @@ surang-client -tunnel web=localhost:3000
 Output:
 
 ```
-✓ web  →  https://crown-cycle-dimmed.surang.eulerbutcooler.xyz
+ web  →  https://crown-cycle-dimmed.surang.eulerbutcooler.xyz
 ```
 
 Anyone can reach your `localhost:3000` through that URL. Add more with another `-tunnel api=localhost:4000`. Stop with ctrl+c; the subdomain is released automatically.
@@ -42,13 +42,20 @@ Anyone can reach your `localhost:3000` through that URL. Add more with another `
 
 The server has two modes, switched by one flag.
 
-**Plaintext (local dev).** Run without `-tls-domain`:
+**Plaintext (local dev and private networks).** Run without `-tls-domain`:
 
 ```sh
 surang-server -domain surang.xyz -db surang.db
 ```
 
 Public HTTP on :8080, API on :9000, control on :5555, all plaintext. Client login: `http://localhost:9000`.
+
+Plaintext is for development and private networks, not public exposure: the generated URLs only work where the server is reachable. In local dev the Host header stands in for DNS:
+
+```sh
+# id is the subdomain the client printed, domain is whatever -domain is set to
+curl http://127.0.0.1:8080/ -H "Host: crown-cycle-dimmed.surang.xyz"
+```
 
 **TLS (public deployment).** Add `-tls-domain` and `-tls-email`, and a Cloudflare API token (Zone:DNS:Edit) in the `CF_DNS_API_TOKEN` environment variable:
 
@@ -59,6 +66,8 @@ surang-server -control :5555 -http :8080 -api :9000 \
 ```
 
 The server gets one wildcard certificate for `example.com` and `*.example.com`, binds :443 for tunnels and `api.example.com`, :80 redirects to https, and wraps the control port in TLS. Certificates are cached next to the database and renewed automatically.
+
+The API also listens on :9000 in TLS mode; bind it to localhost there (`-api 127.0.0.1:9000`), since clients already reach it through `api.<domain>` on 443.
 
 The client mirrors the mode: an https API address means TLS control on the same host, an http API address means plaintext. Nothing else to configure.
 
@@ -77,7 +86,7 @@ docker run -d --name surang \
   -domain surang.xyz -tls-domain surang.xyz -tls-email you@example.com -db /data/surang.db
 ```
 
-Or build it: `docker build -t surang .`.
+Or build it: `docker build -t surang .`. Or Compose: `docker-compose up -d`, it reads `CF_DNS_API_TOKEN` from your environment.
 
 Or binary + systemd: download `surang-server-linux-amd64` from [releases](https://github.com/eulerbutcooler/surang/releases), copy `deploy/surang.service` to `/etc/systemd/system/`, put `CF_DNS_API_TOKEN=...` in `/etc/default/surang`, and edit the domain flags in `ExecStart`.
 
@@ -135,10 +144,10 @@ Tokens are stored as sha256 hashes. Passwords are bcrypt. Revoking a token or le
 ## Installing the client
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/eulerbutcooler/surang/main/scripts/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/eulerbutcooler/surang/main/site/install.sh)"
 ```
 
-Installs `surang-client` to a PATH directory (linux/macOS), or pin a version with `sh scripts/install.sh v0.2.1` once you have the script. Read the script before piping it.
+Installs `surang-client` to a PATH directory (linux/macOS), or pin a version with `sh site/install.sh v0.2.1` once you have the script. Read the script before piping it.
 
 Or grab the right binary from [releases](https://github.com/eulerbutcooler/surang/releases). CI builds static binaries (CGO_ENABLED=0) for linux, macOS and windows on every `v*` tag. The server is not meant to be installed this way; run it under systemd or Docker.
 
