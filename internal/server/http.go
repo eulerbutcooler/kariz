@@ -83,7 +83,12 @@ func (p *Public) runTLS(ctx context.Context) error {
 			http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
 		}),
 	}
-	go redir.ListenAndServe()
+	go func() {
+		err := redir.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			p.log.Error("redirect listener failed", "err", err)
+		}
+	}()
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServeTLS("", "") }()
@@ -93,7 +98,7 @@ func (p *Public) runTLS(ctx context.Context) error {
 	case <-ctx.Done():
 		ctx2, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		return srv.Shutdown(ctx2)
+		return errors.Join(srv.Shutdown(ctx2), redir.Shutdown(ctx2))
 	}
 }
 
