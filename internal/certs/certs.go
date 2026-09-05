@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -99,9 +100,9 @@ func (m *Manager) loadOrObtain() (*tls.Certificate, error) {
 }
 
 func (m *Manager) obtain() (*certificate.Resource, error) {
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	key, err := m.loadOrCreateAccountKey()
 	if err != nil {
-		return nil, fmt.Errorf("certs: account key: %w", err)
+		return nil, err
 	}
 	user := &acmeUser{email: m.email, key: key}
 
@@ -126,11 +127,9 @@ func (m *Manager) obtain() (*certificate.Resource, error) {
 		return nil, fmt.Errorf("certs: dns01: %w", err)
 	}
 
-	reg, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
-	if err != nil {
-		return nil, fmt.Errorf("certs: acme register: %w", err)
+	if err := m.attachAccount(client, user); err != nil {
+		return nil, err
 	}
-	user.registration = reg
 
 	res, err := client.Certificate.Obtain(certificate.ObtainRequest{
 		Domains: []string{m.domain, "*." + m.domain},
@@ -154,4 +153,84 @@ func (m *Manager) renewLoop() {
 		m.cert = cert
 		m.mu.Unlock()
 	}
+}
+
+// loadOrCreateAccountKey returns the persisted ACME account key, or
+// generates and saves a new one on first run.
+func (m *Manager) loadOrCreateAccountKey() (*ecdsa.PrivateKey, error) {
+	path := filepath.Join(m.cacheDir, "account.key")
+	if b, err := os.ReadFile(path); err == nil {
+		if key, err := x509.ParseECPrivateKey(b); err == nil {
+			return key, nil
+		}
+		m.log.Error("certs: unparsable cached account key, replacing it", "err", err)
+	}
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("certs: account key: %w", err)
+	}
+	b, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		return nil, fmt.Errorf("certs: marshal account key: %w", err)
+	}
+	if err := os.MkdirAll(m.cacheDir, 0o700); err != nil {
+		return nil, fmt.Errorf("certs: cache dir: %w", err)
+	}
+	if err := os.WriteFile(path, b, 0o600); err != nil {
+		return nil, fmt.Errorf("certs: write account key: %w", err)
+	}
+	return key, nil
+}
+
+func (m *Manager) loadRegistration() *registration.Resource {
+	b, err := os.ReadFile(filepath.Join(m.cacheDir, "account.json"))
+	if err != nil {
+		return nil
+	}
+	var reg registration.Resource
+	if err := json.Unmarshal(b, &reg); err != nil {
+		m.log.Error("certs: parse cached registration", "err", err)
+		return nil
+	}
+	return &reg
+}
+
+func (m *Manager) saveRegistration(reg *registration.Resource) error {
+	b, err := json.Marshal(reg)
+	if err != nil {
+		return fmt.Errorf("certs: marshal registration: %w", err)
+	}
+	if err := os.MkdirAll(m.cacheDir, 0o700); err != nil {
+		return fmt.Errorf("certs: cache dir: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(m.cacheDir, "account.json"), b, 0o600); err != nil {
+		return fmt.Errorf("certs: write registration: %w", err)
+	}
+	return nil
+}
+
+// attachAccount wires the persisted ACME account onto the lego client.
+// Registration happens only on first run, or when the cached account is
+// rejected by the CA.
+func (m *Manager) attachAccount(client *lego.Client, user *acmeUser) error {
+	reg := m.loadRegistration()
+	if reg == nil {
+		reg, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+		if err != nil {
+			return fmt.Errorf("certs: acme register: %w", err)
+		}
+		user.registration = reg
+		return m.saveRegistration(reg)
+	}
+	user.registration = reg
+	live, err := client.Registration.ResolveAccountByKey()
+	if err != nil {
+		m.log.Error("cached acme account rejected, re-registering", "err", err)
+		live, err = client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
+		if err != nil {
+			return fmt.Errorf("certs: acme register: %w", err)
+		}
+	}
+	user.registration = live
+	return m.saveRegistration(live)
 }
