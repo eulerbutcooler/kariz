@@ -747,6 +747,7 @@
       <span class="badge">Works behind NAT</span>
       <span class="badge">Many tunnels, one connection</span>
       <span class="badge">Auto TLS via Let's Encrypt</span>
+      <span class="badge">Test webhooks locally</span>
     </div>
   </div>
 
@@ -848,6 +849,10 @@
         <div class="card">
           <h3>Bytes in, bytes out</h3>
           <p>The tunnel never inspects HTTP. It relays raw bytes both directions over multiplexed streams. Fast and dumb, on purpose.</p>
+        </div>
+        <div class="card">
+          <h3>Webhook testing</h3>
+          <p>Point Stripe, GitHub, or any provider at your tunnel URL and their requests land on your local port. Watch every payload in your own logs and replay at will.</p>
         </div>
       </div>
     </div>
