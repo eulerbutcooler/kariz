@@ -6,7 +6,7 @@ services:
       - "443:443"     # visitors: tunnels and api.<domain>, TLS
       - "80:80"       # redirects to https
       - "5555:5555"   # clients: control plane, TLS
-      - "9000:9000"   # API, TLS
+      - "127.0.0.1:9000:9000"   # API, TLS
     volumes:
       - surang-data:/data
     command: -domain surang.xyz -tls-domain surang.xyz -tls-email you@example.com -db /data/surang.db
