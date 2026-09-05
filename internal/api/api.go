@@ -97,7 +97,7 @@ func (a *API) handleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(req.Password) < 6 {
-		writeError(w, http.StatusBadRequest, "password too short (min 6 chars")
+		writeError(w, http.StatusBadRequest, "password too short (min 6 chars)")
 		return
 	}
 
